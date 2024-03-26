@@ -2,35 +2,50 @@ const express = require("express");
 const fs = require("fs");
 
 const route = express.Router();
-let usernameSet = "";
-route.post("/", (req, res) => {
-  const { username, message } = req.body;
-  console.log(username);
-  usernameSet = username !== undefined ? username : usernameSet;
-  const data = {
-    username: usernameSet,
-    message: message !== undefined ? message : "",
-  };
-  // console.log(data);
-  fs.appendFile("messages.txt", JSON.stringify(data), (err) => {
-    console.log(err);
-  });
 
-  res.write("<html>");
-  res.write("<body>");
-  fs.readFile("message.txt", (err, d) => {
+route.post("/", (req, res) => {
+  const { message, username } = req.body;
+
+  if (message && username) {
+    let message_body = `${username}: ${message} \n`;
+    fs.appendFile("message.txt", message_body, (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
+  }
+
+  fs.readFile("message.txt", "utf-8", (err, data) => {
     if (err) {
-      return res.status(500).send("Internal server error");
+      console.log(err);
     }
-    console.log(d);
+    const temp = data.split("\n");
+    console.log(temp);
+    res.write("<html>");
+    res.write("<body>");
+    temp.map((item) => {
+      res.write(`<p>${item}</p>`);
+    });
+
+    res.write(
+      "<form action='/' method='post'><input type='text' name='message'/><input type='hidden' name='username' id='hiddenuser'/><button type='submit'>send</button></form>"
+    );
+    res.write("</body>");
+    res.write("<script>");
+    res.write(
+      "document.getElementById('hiddenuser').value = localStorage.getItem('username')"
+    );
+    res.write("</script>");
+    res.write("</html>");
+    res.end();
   });
-  res.write(`<p>${usernameSet}: ${message !== undefined ? message : ""}</p>`);
-  res.write(
-    "<form action='/' method='post'><input type='text' name='message'/><button type='submit'>send</button></form>"
-  );
-  res.write("</body>");
-  res.write("</html>");
-  res.end();
+});
+
+route.post("/message", (req, res) => {
+  const { message, username } = req.body;
+
+  console.log(message, username);
+  return res.send("");
 });
 
 module.exports = route;
